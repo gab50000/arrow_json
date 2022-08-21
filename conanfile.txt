@@ -1,0 +1,10 @@
+[requires]
+arrow/8.0.1
+spdlog/1.8.5
+
+[generators]
+cmake
+
+[options]
+arrow:with_json=True
+arrow:filesystem_layer=True
