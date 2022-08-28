@@ -23,23 +23,25 @@ int main() {
           .ValueOrDie();
 
   auto table = reader->Read().ValueOrDie();
+  std::cout << "table schema: " << table->schema()->ToString() << "\n";
+  /*
+    This shows: table schema: b: list<item: struct<x: int64>>
+  */
 
-  auto b = std::static_pointer_cast<arrow::MapArray>(
-      table->GetColumnByName("b")->chunk(0));
+  auto vec_of_chunks = table->GetColumnByName("b")->chunks();
 
-  auto b_flat =
-      std::static_pointer_cast<arrow::ListArray>(b->Flatten().ValueOrDie());
+  for (const auto& chunk : vec_of_chunks) {
+    auto b_list = std::static_pointer_cast<arrow::ListArray>(chunk);
 
-  std::cout << "length b_flat: " << b_flat->length() << "\n";
+    auto b_struct = std::static_pointer_cast<arrow::StructArray>(
+        b_list->Flatten().ValueOrDie());
 
-  for (int i = 0; i < b_flat->length(); i++) {
-    auto val = std::static_pointer_cast<arrow::StructScalar>(
-        b_flat->GetScalar(i).ValueOrDie());
-    arrow::Int64Builder builder;
-    auto x = std::static_pointer_cast<arrow::Int64Scalar>(
-        val->field("x").ValueOrDie());
-    builder.AppendScalar(*x);
-    int64_t value = builder.GetValue(0);
-    std::cout << "x = " << value << "\n";
+    auto x_arr = std::static_pointer_cast<arrow::Int64Array>(
+        b_struct->GetFieldByName("x"));
+
+    for (int i = 0; i < x_arr->length(); i++) {
+      auto x = x_arr->Value(i);
+      std::cout << "x = " << x << "\n";
+    }
   }
 }
